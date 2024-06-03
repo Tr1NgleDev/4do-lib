@@ -2,4 +2,4 @@
 .vs
 .vscode
 
-cmake-build-*
+build-*

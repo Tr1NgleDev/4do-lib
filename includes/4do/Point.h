@@ -61,28 +61,84 @@ namespace fdo
 		constexpr bool operator==(const Point& other) const { return x == other.x && y == other.y && z == other.z && w == other.w; }
 
 		Point operator+(const Point& other) const { return Point{x + other.x, y + other.y, z + other.z, w + other.w}; }
-		Point& operator+=(const Point& other) { return *this = *this + other; }
+		Point& operator+=(const Point& other)
+		{
+			x += other.x;
+			y += other.y;
+			z += other.z;
+			w += other.w;
+			return *this;
+		}
 
 		Point operator-(const Point& other) const { return Point{x - other.x, y - other.y, z - other.z, w - other.w}; }
-		Point& operator-=(const Point& other) { return *this = *this - other; }
+		Point& operator-=(const Point& other)
+		{
+			x -= other.x;
+			y -= other.y;
+			z -= other.z;
+			w -= other.w;
+			return *this;
+		}
 
 		Point operator/(const Point& other) const { return Point{x / other.x, y / other.y, z / other.z, w / other.w}; }
-		Point& operator/=(const Point& other) { return *this = *this / other; }
+		Point& operator/=(const Point& other)
+		{
+			x /= other.x;
+			y /= other.y;
+			z /= other.z;
+			w /= other.w;
+			return *this;
+		}
 
 		Point operator*(const Point& other) const { return Point{x * other.x, y * other.y, z * other.z, w * other.w}; }
-		Point& operator*=(const Point& other) { return *this = *this * other; }
+		Point& operator*=(const Point& other)
+		{
+			x *= other.x;
+			y *= other.y;
+			z *= other.z;
+			w *= other.w;
+			return *this;
+		}
 
 		Point operator+(float other) const { return Point{x + other, y + other, z + other, w + other}; }
-		Point& operator+=(float other) { return *this = *this + other; }
+		Point& operator+=(float other)
+		{
+			x += other;
+			y += other;
+			z += other;
+			w += other;
+			return *this;
+		}
 
 		Point operator-(float other) const { return Point{x - other, y - other, z - other, w - other}; }
-		Point& operator-=(float other) { return *this = *this - other; }
+		Point& operator-=(float other)
+		{
+			x -= other;
+			y -= other;
+			z -= other;
+			w -= other;
+			return *this;
+		}
 
 		Point operator/(float other) const { return Point{x / other, y / other, z / other, w / other}; }
-		Point& operator/=(float other) { return *this = *this / other; }
+		Point& operator/=(float other)
+		{
+			x /= other;
+			y /= other;
+			z /= other;
+			w /= other;
+			return *this;
+		}
 
 		Point operator*(float other) const { return Point{x * other, y * other, z * other, w * other}; }
-		Point& operator*=(float other) { return *this = *this * other; }
+		Point& operator*=(float other)
+		{
+			x *= other;
+			y *= other;
+			z *= other;
+			w *= other;
+			return *this;
+		}
 
 		constexpr float& operator[](size_t i)
 		{

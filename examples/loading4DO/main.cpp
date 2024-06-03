@@ -1,17 +1,26 @@
 #include <cstdlib>
-#include <4do.h>
+#include <4do/4do.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
+
 int main()
 {
-	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT);
-	fdo::Logger::logToConsole = true;
+	#ifdef _WIN32
+	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT); // enable ansi colors in windows terminal
+	#endif
 	fdo::Logger::ansiColors = true;
+
+	fdo::Logger::logToConsole = true;
 
 	fdo::Object obj = fdo::Object::load4DOFromFile("../example.4do");
 
 	printf("Is valid?: %s\n", !obj.isInvalid() ? "true" : "false");
 	printf("Spec Ver: %d\n", obj.specVer);
 	printf("Orientation: %s\n", obj.orientation.toString().c_str());
+
+	if(obj.isInvalid()) return;
 
 	int i = 0;
 	for(auto& v : obj.vertices)

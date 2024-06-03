@@ -57,28 +57,76 @@ namespace fdo
 		constexpr bool operator==(const TexCoord& other) const { return i == other.i && j == other.j && k == other.k; }
 
 		TexCoord operator+(const TexCoord& other) const { return TexCoord{i + other.i, j + other.j, k + other.k}; }
-		TexCoord& operator+=(const TexCoord& other) { return *this = *this + other; }
+		TexCoord& operator+=(const TexCoord& other)
+		{
+			i += other.i;
+			j += other.j;
+			k += other.k;
+			return *this;
+		}
 
 		TexCoord operator-(const TexCoord& other) const { return TexCoord{i - other.i, j - other.j, k - other.k}; }
-		TexCoord& operator-=(const TexCoord& other) { return *this = *this - other; }
+		TexCoord& operator-=(const TexCoord& other)
+		{
+			i -= other.i;
+			j -= other.j;
+			k -= other.k;
+			return *this;
+		}
 
 		TexCoord operator/(const TexCoord& other) const { return TexCoord{i / other.i, j / other.j, k / other.k}; }
-		TexCoord& operator/=(const TexCoord& other) { return *this = *this / other; }
+		TexCoord& operator/=(const TexCoord& other)
+		{
+			i /= other.i;
+			j /= other.j;
+			k /= other.k;
+			return *this;
+		}
 
 		TexCoord operator*(const TexCoord& other) const { return TexCoord{i * other.i, j * other.j, k * other.k}; }
-		TexCoord& operator*=(const TexCoord& other) { return *this = *this * other; }
+		TexCoord& operator*=(const TexCoord& other)
+		{
+			i *= other.i;
+			j *= other.j;
+			k *= other.k;
+			return *this;
+		}
 
 		TexCoord operator+(float other) const { return TexCoord{i + other, j + other, k + other}; }
-		TexCoord& operator+=(float other) { return *this = *this + other; }
+		TexCoord& operator+=(float other)
+		{
+			i += other;
+			j += other;
+			k += other;
+			return *this;
+		}
 
 		TexCoord operator-(float other) const { return TexCoord{i - other, j - other, k - other}; }
-		TexCoord& operator-=(float other) { return *this = *this - other; }
+		TexCoord& operator-=(float other)
+		{
+			i -= other;
+			j -= other;
+			k -= other;
+			return *this;
+		}
 
 		TexCoord operator/(float other) const { return TexCoord{i / other, j / other, k / other}; }
-		TexCoord& operator/=(float other) { return *this = *this / other; }
+		TexCoord& operator/=(float other)
+		{
+			i /= other;
+			j /= other;
+			k /= other;
+			return *this;
+		}
 
 		TexCoord operator*(float other) const { return TexCoord{i * other, j * other, k * other}; }
-		TexCoord& operator*=(float other) { return *this = *this * other; }
+		TexCoord& operator*=(float other)
+		{
+			i *= other;
+			j *= other;
+			k *= other;
+			return *this;
+		}
 
 		constexpr float& operator[](size_t i)
 		{
