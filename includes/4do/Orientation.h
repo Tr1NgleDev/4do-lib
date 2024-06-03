@@ -33,6 +33,7 @@ namespace fdo
 		case N_Z: return "-Z";
 		case N_W: return "-W";
 		}
+		return "";
 	}
 	inline Axis StringToAxis(const std::string& str)
 	{

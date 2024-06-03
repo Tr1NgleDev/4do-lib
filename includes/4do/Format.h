@@ -23,6 +23,7 @@ namespace fdo
 		case FDataType::vt: return "vt";
 		case FDataType::co: return "co";
 		}
+		return "";
 	}
 	inline FDataType StringToFDataType(const std::string& str)
 	{

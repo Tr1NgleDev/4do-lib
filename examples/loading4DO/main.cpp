@@ -20,7 +20,7 @@ int main()
 	printf("Spec Ver: %d\n", obj.specVer);
 	printf("Orientation: %s\n", obj.orientation.toString().c_str());
 
-	if(obj.isInvalid()) return;
+	if(obj.isInvalid()) return 1;
 
 	int i = 0;
 	for(auto& v : obj.vertices)

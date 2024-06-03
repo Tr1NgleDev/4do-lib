@@ -23,6 +23,7 @@ namespace fdo
 			case FDataType::vt: return vtIndices;
 			case FDataType::co: return coIndices;
 			}
+			return vIndices;
 		}
 	};
 }

@@ -46,6 +46,7 @@ namespace fdo
 			case FDataType::vt: return texCoords.size();
 			case FDataType::co: return colors.size();
 			}
+			return vertices.size();
 		}
 
 		/**
