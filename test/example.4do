@@ -1,0 +1,30 @@
+# header
+4DO 1
+orient X Y Z W
+
+v 0 1 0 1
+v 0 0 1 0
+v 1 1 0 0
+v  1  0    1   1 # any amount of spaces
+
+vn 0 0 0 0
+vn 1 0 0 0
+vn 0 1 0 0
+vn 0 0 1 0
+
+co 255 255 255 0        # white but transparent (different from black transparent when interpolating)
+co 255 0 0 #255         # red
+co 0 255 0 #255         # green
+co 0 0 255 #255         # blue
+co 255 255 255 #255     # white
+
+tformat v/co/vn
+
+t 0/1/0 1/2/1 2/3/2 3/4/3
+
+p 0 1 2 0
+p 2 3 1 2
+p 2 3 0 2
+p 3 1 0 3
+
+c 0
