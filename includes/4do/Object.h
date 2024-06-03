@@ -608,7 +608,6 @@ namespace fdo
 						break;
 					}
 				}
-				#undef isKeyword
 
 				nextLine:
 				if(result._invalid) break;
