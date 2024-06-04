@@ -1,5 +1,5 @@
 # 4DO-Lib [WIP]
-A header-only library for loading and constructing 4DO Geometry files.
+A header-only C++20 library for loading and constructing 4DO Geometry files.
 
 Based on the [4DO Geometry File Format Specification v1](https://github.com/HoxelDraw/4DO-Specification/tree/spec-version-1)
 

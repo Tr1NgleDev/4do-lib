@@ -31,8 +31,15 @@ int main()
 		pushTetrahedron(0,1,2,3, 0).
 		translate({2,2,2,2}).
 		scale({1,3,4,5}).
-		combineWith(obj).
-		save4DOToFile("./test.4do");
+		combineWith(obj);
+
+	obj2.save4DOToFile("./test.4do");
+	obj2.save4DOToFile("./testComments.4do",
+		{
+			"",         // #
+			"hi!",      // # hi!
+			""          // #
+		});
 
 	return 0;
 }
