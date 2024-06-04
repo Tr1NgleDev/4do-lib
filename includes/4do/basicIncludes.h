@@ -19,6 +19,7 @@
 #include <cctype>
 #include <set>
 #include <locale>
+#include <functional>
 
 // utils (mostly for strings)
 namespace fdo::utils

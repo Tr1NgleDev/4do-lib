@@ -684,11 +684,27 @@ namespace fdo
 		// Constructing the Object.
 
 		/**
+		 * Changes the orientation of the Object.
+		 * Will modify vertices!
+		 * @param newOrientation The new orientation.
+		 * @returns *this (for chaining)
+		 */
+		constexpr Object& orient(const Orientation& newOrientation)
+		{
+			for(auto& v : vertices)
+				Orientation::transform(v, orientation, newOrientation);
+
+			orientation = newOrientation;
+
+			return *this;
+		}
+
+		/**
 		 * Acts as the keyword `v`.
 		 * @param vertex The vertex position.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushVertex(const Point& vertex)
+		constexpr Object& pushVertex(const Point& vertex)
 		{
 			if(std::isnan(vertex.x) || std::isnan(vertex.y) || std::isnan(vertex.z) || std::isnan(vertex.w) ||
 				std::isinf(vertex.x) || std::isinf(vertex.y) || std::isinf(vertex.z) || std::isinf(vertex.w))
@@ -743,7 +759,7 @@ namespace fdo
 		 * @param texCoord The texture coordinates.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTexCoord(const TexCoord& texCoord)
+		constexpr Object& pushTexCoord(const TexCoord& texCoord)
 		{
 			if(std::isnan(texCoord.x) || std::isnan(texCoord.y) || std::isnan(texCoord.z) ||
 				std::isinf(texCoord.x) || std::isinf(texCoord.y) || std::isinf(texCoord.z))
@@ -772,7 +788,7 @@ namespace fdo
 		 * @param color The color.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushColor(const Color& color)
+		constexpr Object& pushColor(const Color& color)
 		{
 			colors.emplace_back(color);
 			return *this;
@@ -827,7 +843,7 @@ namespace fdo
 		 * @param tet The tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(const Tetrahedron& tet)
+		constexpr Object& pushTetrahedron(const Tetrahedron& tet)
 		{
 			if(std::any_of(tet.vIndices.cbegin(), tet.vIndices.cend(), [this](const int32_t& ind){ return ind >= (int)vertices.size(); }))
 				Logger::logWarning("pushTetrahedron(): One of the vertex indices is pointing outside the vertices data!");
@@ -845,7 +861,7 @@ namespace fdo
 		 * @param vIndices,vnIndices,vtIndices,coIndices The tetrahedron data arrays.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			const std::array<int32_t, 4>& vIndices,
 			const std::array<int32_t, 4>& vnIndices,
 			const std::array<int32_t, 4>& vtIndices,
@@ -858,7 +874,7 @@ namespace fdo
 		 * @param vIndices,vnIndices,vtIndices,coIndices The tetrahedron data arrays.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			int32_t (&vIndices )[4],
 			int32_t (&vnIndices)[4],
 			int32_t (&vtIndices)[4],
@@ -870,7 +886,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			int32_t v0,
 			int32_t v1,
 			int32_t v2,
@@ -882,7 +898,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			int32_t v0,
 			int32_t v1,
 			int32_t v2,
@@ -898,7 +914,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			int32_t v0,
 			int32_t v1,
 			int32_t v2,
@@ -911,7 +927,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			const Point& v0,
 			const Point& v1,
 			const Point& v2,
@@ -929,7 +945,7 @@ namespace fdo
 		 * @param co The color assigned to the whole tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushTetrahedron(
+		constexpr Object& pushTetrahedron(
 			const Point& v0,
 			const Point& v1,
 			const Point& v2,
@@ -977,7 +993,7 @@ namespace fdo
 		 * @param tet The polyline.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushPolyline(const Polyline& line)
+		constexpr Object& pushPolyline(const Polyline& line)
 		{
 			if(line.length() < 2)
 			{
@@ -1000,7 +1016,7 @@ namespace fdo
 		 * @param vIndices,vnIndices,vtIndices,coIndices The polyline data arrays.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushPolyline(
+		constexpr Object& pushPolyline(
 			const std::vector<int32_t>& vIndices,
 			const std::vector<int32_t>& vnIndices,
 			const std::vector<int32_t>& vtIndices,
@@ -1033,7 +1049,7 @@ namespace fdo
 		 * @param cell The cell.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushCell(const Cell& cell)
+		constexpr Object& pushCell(const Cell& cell)
 		{
 			if(std::any_of(cell.tIndices.cbegin(), cell.tIndices.cend(), [this](const int32_t& ind){ return ind >= tetrahedra.size(); }))
 				Logger::logWarning("pushCell(): One of the tetrahedron indices is pointing outside the tetrahedra data!");
@@ -1051,7 +1067,7 @@ namespace fdo
 		 * @param tetra The tetrahedra list.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushCell(const std::vector<Tetrahedron>& tetra)
+		constexpr Object& pushCell(const std::vector<Tetrahedron>& tetra)
 		{
 			Cell cell{};
 			for(auto& tet : tetra)
@@ -1065,7 +1081,7 @@ namespace fdo
 		 * @param tIndices The indices list.
 		 * @returns *this (for chaining)
 		 */
-		Object& pushCell(const std::vector<int32_t>& tIndices)
+		constexpr Object& pushCell(const std::vector<int32_t>& tIndices)
 		{
 			Cell cell{tIndices};
 			return pushCell(cell);
@@ -1076,7 +1092,7 @@ namespace fdo
 		 * @param other The Object to combine with.
 		 * @return *this (for chaining)
 		 */
-		Object& combineWith(const Object& other)
+		constexpr Object& combineWith(const Object& other)
 		{
 			size_t startV = vertices.size();
 			size_t startVN = normals.size();
@@ -1133,6 +1149,129 @@ namespace fdo
 			return *this;
 		}
 
+		/**
+		 * @return The median point of all vertices.
+		 */
+		Point getCenter()
+		{
+			if(vertices.empty()) return {0,0,0,0};
+
+			Point center{};
+			int i = 0;
+
+			for(auto& v : vertices)
+			{
+				center += v;
+				i++;
+			}
+
+			center /= i;
+
+			return center;
+		}
+
+		/**
+		 * Translates all vertices by an amount
+		 * @param v The translation amount.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& translate(const Point& v)
+		{
+			for(auto& vert : vertices)
+				vert += v;
+
+			return *this;
+		}
+		/**
+		 * Scales all vertices by an amount from an origin.
+		 * @param v The scale amount.
+		 * @param origin The scale origin.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& scale(const Point& v, const Point& origin)
+		{
+			for(auto& vert : vertices)
+				vert = origin + (vert - origin) * v;
+
+			return *this;
+		}
+		/**
+		 * Scales all vertices by an amount from the center.
+		 * @param v The scale amount.
+		 * @return *this (for chaining)
+		 */
+		Object& scale(const Point& v) { return scale(v, getCenter()); }
+		/**
+		 * Applies whatever transformation you want.
+		 * @param verticesT The transformation function.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& transformVertices(
+			const std::function<Point(const Point& vertex)>& verticesT)
+		{
+			for(auto& vert : vertices)
+				vert = verticesT(vert);
+
+			return *this;
+		}
+		/**
+		 * Applies whatever transformation you want.
+		 * @param normalsT The transformation function.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& transformNormals(
+			const std::function<Point(const Point& normal)>& normalsT)
+		{
+			for(auto& n : normals)
+				n = normalsT(n);
+
+			return *this;
+		}
+		/**
+		 * Applies whatever transformation you want.
+		 * @param texCoordsT The transformation function.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& transformTexCoords(
+			const std::function<TexCoord(const TexCoord& texCoord)>& texCoordsT)
+		{
+			for(auto& texCoord : texCoords)
+				texCoord = texCoordsT(texCoord);
+
+			return *this;
+		}
+		/**
+		 * Applies whatever transformation you want.
+		 * @param colorsT The transformation function.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& transformColors(
+			const std::function<Color(const Color& color)>& colorsT)
+		{
+			for(auto& color : colors)
+				color = colorsT(color);
+
+			return *this;
+		}
+		/**
+		 * Applies whatever transformation you want.
+		 * @param verticesT,normalsT,texCoordsT,colorsT The transformation functions.
+		 * @return *this (for chaining)
+		 */
+		constexpr Object& transform(
+			const std::function<Point(const Point& vertex)>& verticesT,
+			const std::function<Point(const Point& normal)>& normalsT,
+			const std::function<TexCoord(const TexCoord& texCoord)>& texCoordsT,
+			const std::function<Color(const Color& color)>& colorsT)
+		{
+			transformVertices(verticesT);
+			transformNormals(normalsT);
+			transformTexCoords(texCoordsT);
+			transformColors(colorsT);
+
+			return *this;
+		}
+
 		std::string save4DO()
 		{
 			std::string result = "# Generated by 4DO-Lib\n\n# Header\n";
@@ -1151,7 +1290,7 @@ namespace fdo
 
 			if(!colors.empty())
 			{
-				result += "\n# Colors\n\n";
+				result += "\n# Colors\n";
 
 				for (auto& color : colors)
 					result += std::format("co {}\n", color.toString());
@@ -1159,7 +1298,7 @@ namespace fdo
 
 			if(!vertices.empty())
 			{
-				result += "\n# Vertices\n\n";
+				result += "\n# Vertices\n";
 
 				for (auto& vert : vertices)
 					result += std::format("v {}\n", vert.toString());
@@ -1167,7 +1306,7 @@ namespace fdo
 
 			if(!normals.empty())
 			{
-				result += "\n# Normals\n\n";
+				result += "\n# Normals\n";
 
 				for (auto& n : normals)
 					result += std::format("vn {}\n", n.toString());
@@ -1175,7 +1314,7 @@ namespace fdo
 
 			if(!texCoords.empty())
 			{
-				result += "\n# Texture Coordinates\n\n";
+				result += "\n# Texture Coordinates\n";
 
 				for (auto& tc : texCoords)
 					result += std::format("vt {}\n", tc.toString());
@@ -1183,7 +1322,7 @@ namespace fdo
 
 			if(!tetrahedra.empty())
 			{
-				result += "\n# Tetrahedra\n\n";
+				result += "\n# Tetrahedra\n";
 
 				for (auto& t : tetrahedra)
 					result += std::format("t {}\n", t.toString(tformat));
@@ -1191,7 +1330,7 @@ namespace fdo
 
 			if(!cells.empty())
 			{
-				result += "\n# Cells\n\n";
+				result += "\n# Cells\n";
 
 				for (auto& c : cells)
 					result += std::format("c {}\n", c.toString());
@@ -1199,7 +1338,7 @@ namespace fdo
 
 			if(!polylines.empty())
 			{
-				result += "\n# Polylines\n\n";
+				result += "\n# Polylines\n";
 
 				for (auto& p : polylines)
 					result += std::format("p {}\n", p.toString(pformat));
