@@ -6,7 +6,7 @@ Based on the [4DO Geometry File Format Specification v1](https://github.com/Hoxe
 ## Goals:
 - [x] Make a complete implementation of the 4DO File Format Specification.
 - [x] .4do file loading.
-- [ ] .4do file construction/creation and saving.
+- [x] .4do file construction/creation and saving.
 - [ ] Create an optimized binary variant of the format.
 
-Check [examples](./examples/) for examples ig.
+Check [examples](./examples) for examples ig.
