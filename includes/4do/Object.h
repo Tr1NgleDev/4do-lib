@@ -807,12 +807,15 @@ namespace fdo
 		Object& pushColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) { return pushColor(Color{r,g,b,a}); }
 		/**
 		 * Acts as the keyword `co`.
-		 * @param hex 0xRRGGBBAA The RGBA color hex.
+		 * @param hex 0xRRGGBBAA or 0xRRGGBB The color hex.
 		 * @returns *this (for chaining)
 		 */
 		Object& pushColor(uint32_t hex)
 		{
 			Color col{};
+
+			if(hex <= 0x00FFFFFF) // if RGB
+				hex = (hex << 8) + 0xFF; // make it RGBA with A 255
 
 			col.r = (hex >> 24) & 0xff;
 			col.g = (hex >> 16) & 0xff;
@@ -820,22 +823,6 @@ namespace fdo
 			col.a = hex & 0xff;
 
 			return pushColor(col);
-		}
-		/**
-		 * Acts as the keyword `co`.
-		 * @param hex 0xRRGGBB The RGB color hex. A defaults to 0xFF.
-		 * @returns *this (for chaining)
-		 */
-		Object& pushColorRGB(uint32_t hex)
-		{
-			Color col{};
-
-			if(hex > 0x00FFFFFF)
-				hex = (hex >> 8);
-
-			hex = ((hex << 8) + 0xFF);
-
-			return pushColor(hex);
 		}
 
 		/**
