@@ -36,13 +36,13 @@ namespace fdo
 	struct Format
 	{
 		std::vector<FDataType> indices{ FDataType::v };
-		FDataType levelData = FDataType::None;
+		std::vector<FDataType> levelData{};
 
 		std::string toString() const
 		{
 			std::string result;
-			if(levelData != FDataType::None)
-				result = std::format("{} ", FDataTypeToString(levelData));
+			for(auto& l : levelData)
+				result = std::format("{} ", FDataTypeToString(l));
 
 			for(auto& f : indices)
 				result += std::format("{}/", FDataTypeToString(f));

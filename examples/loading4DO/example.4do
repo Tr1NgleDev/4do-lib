@@ -18,6 +18,10 @@ co 0 255 0 #255         # green
 co 0 0 255 #255         # blue
 co 255 255 255 #255     # white
 
+# supports hex
+co 0xF0F1F200           # R G B A
+co 0xF1F2F3           # R G B 
+
 tformat v/co/vn
 
 t 0/1/0 1/2/1 2/3/2 3/4/3

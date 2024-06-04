@@ -14,7 +14,14 @@ int main()
 
 	fdo::Logger::logToConsole = true;
 
-	fdo::Object obj = fdo::Object();
+	fdo::Object obj = fdo::Object().
+		pushVertex(0, 0, 0, 0).
+		pushVertex(1, 0, 0, 0).
+		pushVertex(0, 1, 0, 0).
+		pushVertex(0, 0, 1, 0).
+		pushColor(200, 200, 200).
+		pushTetrahedron(0,1,2,3, 0).
+		save4DOToFile("./test.4do");
 
 	return 0;
 }

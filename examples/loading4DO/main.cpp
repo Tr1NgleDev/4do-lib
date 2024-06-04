@@ -14,7 +14,7 @@ int main()
 
 	fdo::Logger::logToConsole = true;
 
-	fdo::Object obj = fdo::Object::load4DOFromFile("../example.4do");
+	fdo::Object obj = fdo::Object::load4DOFromFile("./example.4do");
 
 	printf("Is valid?: %s\n", !obj.isInvalid() ? "true" : "false");
 	printf("Spec Ver: %d\n", obj.specVer);

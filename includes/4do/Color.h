@@ -12,8 +12,8 @@ namespace fdo
 	{
 		uint8_t r,g,b,a;
 
-		Color(float r = 255, float g = 255, float b = 255, float a = 255) : r(r), g(g), b(b), a(a) {}
-		Color(float v) : r(v), g(v), b(v), a(v) {}
+		Color(uint8_t r = 255, uint8_t g = 255, uint8_t b = 255, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
+		Color(uint8_t v) : r(v), g(v), b(v), a(v) {}
 		Color(const Color& other)
 		{
 			this->r = other.r;
@@ -69,7 +69,7 @@ namespace fdo
 		constexpr const uint8_t operator[](size_t i) const
 		{
 			if(i < 0 || i >= 4)
-				throw std::out_of_range("fdo::Point::operator[]: Index out of range.");
+				throw std::out_of_range("fdo::Color::operator[]: Index out of range.");
 			return *(&r + i);
 		}
 

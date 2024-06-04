@@ -34,6 +34,8 @@ namespace fdo
 		Format tformat{};
 		Format pformat{};
 
+		Object(uint8_t specVer = 1) : specVer(specVer) {}
+
 		bool isInvalid() { return _invalid; }
 
 		size_t getVectorSize(FDataType type) const
@@ -308,9 +310,11 @@ namespace fdo
 						// color data
 						else if(keyword == "co")
 						{
-							if (data.size() != 4 && data.size() != 3)
+							if (data.size() != 4 && data.size() != 3 && data.size() != 1)
 							{
-								Logger::logWarning(std::format("{}: Invalid usage of `co`:\n\tKeyword `co` MUST have 3 or 4 values denoting the color RGB (A=255) or RGBA values!", lineInd + 1));
+								Logger::logWarning(std::format("{}: Invalid usage of `co`:\n\tKeyword `co` MUST either have 3 or 4 values denoting the color RGB (A=255) or RGBA values \n\t"
+															   "OR a single HEX value denoting either 0xRRGGBB or 0xRRGGBBAA!",
+									lineInd + 1));
 								goto nextLine;
 							}
 							Color color{255,255,255, 255};
@@ -324,11 +328,24 @@ namespace fdo
 									result._invalid = true;
 									goto nextLine;
 								}
-								if(v > 255 || v < 0)
+								if(data.size() != 1) // R G B or R G B A values
 								{
-									Logger::logWarning(std::format("{}: Color values MUST all be in the range [0,255]!\n\tThe values will be clamped.", lineInd + 1));
+									if(v > 255 || v < 0)
+										Logger::logWarning(std::format("{}: Color values MUST all be in the range [0,255]!\n\tThe values will be clamped.", lineInd + 1));
+
+									color[i] = (uint8_t)std::clamp(v, 0LL, 255LL);
 								}
-								color[i] = (uint8_t)std::clamp(v, 0LL, 255LL);
+								else // 0xRRGGBB or 0xRRGGBBAA value
+								{
+									uint32_t v32 = (uint32_t)v;
+									if(v32 <= 0x00FFFFFF) // if 0xRRGGBB then offset and add 0xFF to make it 0xRRGGBBFF
+										v32 = (v32 << 8) + 0xFF;
+
+									color.r = (v32 >> 24) & 0xFF;
+									color.g = (v32 >> 16) & 0xFF;
+									color.b = (v32 >> 8) & 0xFF;
+									color.a = v32 & 0xFF;
+								}
 							}
 							result.colors.emplace_back(color);
 
@@ -342,15 +359,16 @@ namespace fdo
 								Logger::logWarning(std::format("{}: tformat MUST be listed before any tetrahedra are listed!",lineInd + 1));
 								goto nextLine;
 							}
-							if (data.size() != 1 && data.size() != 2)
+							if (data.size() < 1)
 							{
 								Logger::logWarning(std::format("{}: Invalid usage of `tformat`.", lineInd + 1));
 								goto nextLine;
 							}
 
 							Format newFormat{{}, {}};
+							bool containsV = false;
 
-							if(data.size() == 2) // tetrahedron-level data
+							while(data.size() > 1) // tetrahedron-level data
 							{
 								FDataType type = StringToFDataType(data[0]);
 								if(type == FDataType::None)
@@ -358,13 +376,20 @@ namespace fdo
 									Logger::logWarning(std::format("{}: Unknown data type {}.", lineInd + 1, data[0]));
 									goto nextLine;
 								}
-								newFormat.levelData = type;
+								if(utils::vectorContains(newFormat.levelData, type))
+								{
+									Logger::logWarning(std::format("{}: Tetrahedron Format Data Types MUST NOT be repeated.", lineInd + 1));
+									goto nextLine;
+								}
+								if(type == FDataType::v)
+									containsV = true;
+								newFormat.levelData.push_back(type);
 
 								data.erase(data.begin());
 							}
 
 							std::vector<std::string> dataTypes = utils::split(data[0], '/');
-							bool containsV = false;
+
 							for(auto& typeStr : dataTypes)
 							{
 								FDataType type = StringToFDataType(typeStr);
@@ -373,9 +398,9 @@ namespace fdo
 									Logger::logWarning(std::format("{}: Unknown data type {}.", lineInd + 1, typeStr));
 									goto nextLine;
 								}
-								if(type == newFormat.levelData)
+								if(utils::vectorContains(newFormat.levelData, type) || utils::vectorContains(newFormat.indices, type))
 								{
-									Logger::logWarning(std::format("{}: Tetrahedron-level Data Type MUST NOT be repeated.", lineInd + 1, typeStr));
+									Logger::logWarning(std::format("{}: Tetrahedron Format Data Types MUST NOT be repeated.", lineInd + 1));
 									goto nextLine;
 								}
 								if(type == FDataType::v)
@@ -397,7 +422,7 @@ namespace fdo
 						else if(keyword == "t")
 						{
 							const Format& tformat = result.tformat;
-							const size_t expectedSize = 4 + (tformat.levelData != FDataType::None ? 1 : 0);
+							const size_t expectedSize = 4 + tformat.levelData.size();
 							if (data.size() != expectedSize)
 							{
 								invalidT:
@@ -408,20 +433,23 @@ namespace fdo
 
 							Tetrahedron tet{};
 
-							if(tformat.levelData != FDataType::None)
+							if(!tformat.levelData.empty())
 							{
-								bool succeded = false;
-								long long v = utils::toLL(data[0], succeded);
-
-								if(succeded && v >= 0 && v < result.getVectorSize(tformat.levelData))
-									for(int i = 0; i < 4; i++) tet[tformat.levelData][i] = (int32_t)v;
-								else
+								for(auto& levelData : tformat.levelData)
 								{
-									Logger::logError(std::format("{}: Indices MUST be non-negative real integers and MUST NOT refer to out-of-bounds data positions!", lineInd + 1));
-									result._invalid = true;
-									goto nextLine;
+									bool succeded = false;
+									long long v = utils::toLL(data[0], succeded);
+
+									if(succeded && v >= 0 && v < result.getVectorSize(levelData))
+										for(int i = 0; i < 4; i++) tet[levelData][i] = (int32_t)v;
+									else
+									{
+										Logger::logError(std::format("{}: Indices MUST be non-negative real integers and MUST NOT refer to out-of-bounds data positions!", lineInd + 1));
+										result._invalid = true;
+										goto nextLine;
+									}
+									data.erase(data.begin());
 								}
-								data.erase(data.begin());
 							}
 
 							for(int i = 0; i < 4; i++)
@@ -491,7 +519,7 @@ namespace fdo
 								Logger::logWarning(std::format("{}: pformat MUST be listed before any polylines are listed!",lineInd + 1));
 								goto nextLine;
 							}
-							if (data.size() != 1 && data.size() != 2)
+							if (data.size() < 1)
 							{
 								Logger::logWarning(std::format("{}: Invalid usage of `pformat`.", lineInd + 1));
 								goto nextLine;
@@ -499,7 +527,9 @@ namespace fdo
 
 							Format newFormat{{}, {}};
 
-							if(data.size() == 2) // polyline-level data
+							bool containsV = false;
+
+							while(data.size() > 1) // polyline-level data
 							{
 								FDataType type = StringToFDataType(data[0]);
 								if(type == FDataType::None)
@@ -507,13 +537,19 @@ namespace fdo
 									Logger::logWarning(std::format("{}: Unknown data type {}.", lineInd + 1, data[0]));
 									goto nextLine;
 								}
-								newFormat.levelData = type;
+								if(utils::vectorContains(newFormat.levelData, type))
+								{
+									Logger::logWarning(std::format("{}: Polyline Format Data Types MUST NOT be repeated.", lineInd + 1));
+									goto nextLine;
+								}
+								if(type == FDataType::v)
+									containsV = true;
+								newFormat.levelData.push_back(type);
 
 								data.erase(data.begin());
 							}
 
 							std::vector<std::string> dataTypes = utils::split(data[0], '/');
-							bool containsV = false;
 							for(auto& typeStr : dataTypes)
 							{
 								FDataType type = StringToFDataType(typeStr);
@@ -522,9 +558,9 @@ namespace fdo
 									Logger::logWarning(std::format("{}: Unknown data type {}.", lineInd + 1, typeStr));
 									goto nextLine;
 								}
-								if(type == newFormat.levelData)
+								if(utils::vectorContains(newFormat.levelData, type) || utils::vectorContains(newFormat.indices, type))
 								{
-									Logger::logWarning(std::format("{}: Polyline-level Data Type MUST NOT be repeated.", lineInd + 1, typeStr));
+									Logger::logWarning(std::format("{}: Polyline Format Data Types MUST NOT be repeated.", lineInd + 1));
 									goto nextLine;
 								}
 								if(type == FDataType::v)
@@ -546,7 +582,7 @@ namespace fdo
 						else if(keyword == "p")
 						{
 							const Format& pformat = result.pformat;
-							const size_t expectedSize = 2 + (pformat.levelData != FDataType::None ? 1 : 0);
+							const size_t expectedSize = 2 + pformat.levelData.size();
 							if (data.size() < expectedSize)
 							{
 								invalidP:
@@ -554,28 +590,35 @@ namespace fdo
 									lineInd + 1, pformat.toString()));
 								goto nextLine;
 							}
+							const size_t dataSize = data.size();
+							const size_t verticesCount = dataSize - pformat.levelData.size();
 
 							Polyline p{};
 
-							if(pformat.levelData != FDataType::None)
+							if(!pformat.levelData.size())
 							{
-								int32_t levelData = -1;
-								bool succeded = false;
-								long long v = utils::toLL(data[0], succeded);
-
-								if(succeded && v >= 0 && v < result.getVectorSize(pformat.levelData))
-									levelData = (int32_t)v;
-								else
+								for(auto& levelDataT : pformat.levelData)
 								{
-									Logger::logError(std::format("{}: Indices MUST be non-negative real integers and MUST NOT refer to out-of-bounds data positions!", lineInd + 1));
-									result._invalid = true;
-									goto nextLine;
-								}
-								data.erase(data.begin());
+									int32_t levelData = -1;
+									bool succeded = false;
+									long long v = utils::toLL(data[0], succeded);
 
-								p[pformat.levelData].reserve(data.size());
-								for (int i = 0; i < data.size(); i++)
-									p[pformat.levelData].push_back(levelData);
+									if (succeded && v >= 0 && v < result.getVectorSize(levelDataT))
+										levelData = (int32_t)v;
+									else
+									{
+										Logger::logError(std::format(
+											"{}: Indices MUST be non-negative real integers and MUST NOT refer to out-of-bounds data positions!",
+											lineInd + 1));
+										result._invalid = true;
+										goto nextLine;
+									}
+									data.erase(data.begin());
+
+									p[levelDataT].reserve(verticesCount);
+									for (int i = 0; i < verticesCount; i++)
+										p[levelDataT].push_back(levelData);
+								}
 							}
 
 							for(auto& d : data)
@@ -636,6 +679,554 @@ namespace fdo
 			buf << input;
 
 			return parse4DO(buf);
+		}
+
+		// Constructing the Object.
+
+		/**
+		 * Acts as the keyword `v`.
+		 * @param vertex The vertex position.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushVertex(const Point& vertex)
+		{
+			if(std::isnan(vertex.x) || std::isnan(vertex.y) || std::isnan(vertex.z) || std::isnan(vertex.w) ||
+				std::isinf(vertex.x) || std::isinf(vertex.y) || std::isinf(vertex.z) || std::isinf(vertex.w))
+			{
+				Logger::logError("pushVertex(): Vertex Position MUST NOT contain NaN or INF values.");
+				return *this;
+			}
+			vertices.emplace_back(vertex);
+			return *this;
+		}
+		/**
+		 * Acts as the keyword `v`.
+		 * @param x,y,z,w The vertex position.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushVertex(float x, float y, float z, float w) { return pushVertex(Point{x,y,z,w}); }
+
+		/**
+		 * Acts as the keyword `vn`.
+		 * @param normal The vertex normal.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushNormal(const Point& normal)
+		{
+			if(std::isnan(normal.x) || std::isnan(normal.y) || std::isnan(normal.z) || std::isnan(normal.w) ||
+				std::isinf(normal.x) || std::isinf(normal.y) || std::isinf(normal.z) || std::isinf(normal.w))
+			{
+				Logger::logError("pushNormal(): Vertex Normals MUST NOT contain NaN or INF values.");
+				return *this;
+			}
+			if(Point::length(normal))
+			{
+				Point normalized = Point::normalize(normal);
+				Logger::logWarning(std::format("pushNormal(): Vertex Normals SHOULD be normalized.\n\tNormalized variant: {{{:.4f}, {:.4f}, {:.4f}, {:.4f}}}",
+					normalized.x,
+					normalized.y,
+					normalized.z,
+					normalized.w));
+			}
+			normals.emplace_back(normal);
+			return *this;
+		}
+		/**
+		 * Acts as the keyword `vn`.
+		 * @param x,y,z,w The vertex normal.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushNormal(float x, float y, float z, float w) { return pushNormal(Point{x,y,z,w}); }
+
+		/**
+		 * Acts as the keyword `vt`.
+		 * @param texCoord The texture coordinates.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTexCoord(const TexCoord& texCoord)
+		{
+			if(std::isnan(texCoord.x) || std::isnan(texCoord.y) || std::isnan(texCoord.z) ||
+				std::isinf(texCoord.x) || std::isinf(texCoord.y) || std::isinf(texCoord.z))
+			{
+				Logger::logError("pushTexCoord(): Vertex Texture Coordinates MUST NOT contain NaN or INF values.");
+				return *this;
+			}
+			if(
+				!utils::inRangeII(texCoord.x, 0, 1) ||
+				!utils::inRangeII(texCoord.y, 0, 1) ||
+				!utils::inRangeII(texCoord.z, 0, 1) ||
+				!utils::inRangeII(texCoord.w, 0, 1))
+				Logger::logWarning("pushTexCoord(): Vertex Texture Coordinates SHOULD be in range [0,1].");
+			texCoords.emplace_back(texCoord);
+			return *this;
+		}
+		/**
+		 * Acts as the keyword `vt`.
+		 * @param u,v,w The texture coordinates.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTexCoord(float u, float v, float w) { return pushTexCoord(TexCoord{u,v,w}); }
+
+		/**
+		 * Acts as the keyword `co`.
+		 * @param color The color.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushColor(const Color& color)
+		{
+			colors.emplace_back(color);
+			return *this;
+		}
+		/**
+		 * Acts as the keyword `co`.
+		 * @param r,g,b,a The color.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushColorF(float r, float g, float b, float a = 1.f) { return pushColor(Color{(uint8_t)(r * 255.f),(uint8_t)(g * 255.f),(uint8_t)(b * 255.f),(uint8_t)(a * 255.f)}); }
+		/**
+		 * Acts as the keyword `co`.
+		 * @param r,g,b,a The color.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) { return pushColor(Color{r,g,b,a}); }
+		/**
+		 * Acts as the keyword `co`.
+		 * @param hex 0xRRGGBBAA The RGBA color hex.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushColor(uint32_t hex)
+		{
+			Color col{};
+
+			col.r = (hex >> 24) & 0xff;
+			col.g = (hex >> 16) & 0xff;
+			col.b = (hex >> 8) & 0xff;
+			col.a = hex & 0xff;
+
+			return pushColor(col);
+		}
+		/**
+		 * Acts as the keyword `co`.
+		 * @param hex 0xRRGGBB The RGB color hex. A defaults to 0xFF.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushColorRGB(uint32_t hex)
+		{
+			Color col{};
+
+			if(hex > 0x00FFFFFF)
+				hex = (hex >> 8);
+
+			hex = ((hex << 8) + 0xFF);
+
+			return pushColor(hex);
+		}
+
+		/**
+		 * Acts as the keyword `t`.
+		 * @param tet The tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(const Tetrahedron& tet)
+		{
+			if(std::any_of(tet.vIndices.cbegin(), tet.vIndices.cend(), [this](const int32_t& ind){ return ind >= (int)vertices.size(); }))
+				Logger::logWarning("pushTetrahedron(): One of the vertex indices is pointing outside the vertices data!");
+			if(std::any_of(tet.vnIndices.cbegin(), tet.vnIndices.cend(), [this](const int32_t& ind){ return ind >= (int)normals.size(); }))
+				Logger::logWarning("pushTetrahedron(): One of the normal indices is pointing outside the normals data!");
+			if(std::any_of(tet.vtIndices.cbegin(), tet.vtIndices.cend(), [this](const int32_t& ind){ return ind >= (int)texCoords.size(); }))
+				Logger::logWarning("pushTetrahedron(): One of the texture coordinate indices is pointing outside the texture coords data!");
+			if(std::any_of(tet.coIndices.cbegin(), tet.coIndices.cend(), [this](const int32_t& ind){ return ind >= (int)colors.size(); }))
+				Logger::logWarning("pushTetrahedron(): One of the color indices is pointing outside the colors data!");
+			tetrahedra.emplace_back(tet);
+			return *this;
+		}
+		/**
+		 * Acts as the keyword `t`.
+		 * @param vIndices,vnIndices,vtIndices,coIndices The tetrahedron data arrays.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			const std::array<int32_t, 4>& vIndices,
+			const std::array<int32_t, 4>& vnIndices,
+			const std::array<int32_t, 4>& vtIndices,
+			const std::array<int32_t, 4>& coIndices)
+		{
+			return pushTetrahedron({vIndices, vnIndices, vtIndices, coIndices});
+		}
+		/**
+		 * Acts as the keyword `t`.
+		 * @param vIndices,vnIndices,vtIndices,coIndices The tetrahedron data arrays.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			int32_t (&vIndices )[4],
+			int32_t (&vnIndices)[4],
+			int32_t (&vtIndices)[4],
+			int32_t (&coIndices)[4])
+		{
+			return pushTetrahedron(std::to_array(vIndices), std::to_array(vnIndices), std::to_array(vtIndices), std::to_array(coIndices));
+		}
+		/**
+		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			int32_t v0,
+			int32_t v1,
+			int32_t v2,
+			int32_t v3)
+		{
+			return pushTetrahedron(std::array<int, 4>{v0, v1, v2, v3}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1});
+		}
+		/**
+		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			int32_t v0,
+			int32_t v1,
+			int32_t v2,
+			int32_t v3,
+			int32_t vn0,
+			int32_t vn1,
+			int32_t vn2,
+			int32_t vn3)
+		{
+			return pushTetrahedron(std::array<int, 4>{v0, v1, v2, v3}, std::array<int, 4>{vn0,vn1,vn2,vn3}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1});
+		}
+		/**
+		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			int32_t v0,
+			int32_t v1,
+			int32_t v2,
+			int32_t v3,
+			int32_t co)
+		{
+			return pushTetrahedron(std::array<int, 4>{v0, v1, v2, v3}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{co,co,co,co});
+		}
+		/**
+		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			const Point& v0,
+			const Point& v1,
+			const Point& v2,
+			const Point& v3)
+		{
+			pushVertex(v0); int i0 = vertices.size() - 1;
+			pushVertex(v1); int i1 = vertices.size() - 1;
+			pushVertex(v2); int i2 = vertices.size() - 1;
+			pushVertex(v3); int i3 = vertices.size() - 1;
+
+			return pushTetrahedron(std::array<int, 4>{i0, i1, i2, i3}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1});
+		}
+		/**
+		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
+		 * @param co The color assigned to the whole tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			const Point& v0,
+			const Point& v1,
+			const Point& v2,
+			const Point& v3,
+			const Color& co)
+		{
+			pushVertex(v0); int i0 = vertices.size() - 1;
+			pushVertex(v1); int i1 = vertices.size() - 1;
+			pushVertex(v2); int i2 = vertices.size() - 1;
+			pushVertex(v3); int i3 = vertices.size() - 1;
+			pushColor(co); int co0 = colors.size() - 1;
+
+			return pushTetrahedron(std::array<int, 4>{i0, i1, i2, i3}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{co0,co0,co0,co0});
+		}
+		/**
+		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
+		 * @param vn0,vn1,vn2,vn3 Vertex Normals of the tetrahedron.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushTetrahedron(
+			const Point& v0,
+			const Point& v1,
+			const Point& v2,
+			const Point& v3,
+			const Point& vn0,
+			const Point& vn1,
+			const Point& vn2,
+			const Point& vn3)
+		{
+			pushVertex(v0); int i0 = vertices.size() - 1;
+			pushVertex(v1); int i1 = vertices.size() - 1;
+			pushVertex(v2); int i2 = vertices.size() - 1;
+			pushVertex(v3); int i3 = vertices.size() - 1;
+			pushNormal(vn0); int in0 = normals.size() - 1;
+			pushNormal(vn1); int in1 = normals.size() - 1;
+			pushNormal(vn2); int in2 = normals.size() - 1;
+			pushNormal(vn3); int in3 = normals.size() - 1;
+
+			return pushTetrahedron(std::array<int, 4>{i0, i1, i2, i3}, std::array<int, 4>{in0, in1, in2, in3}, std::array<int, 4>{-1,-1,-1,-1}, std::array<int, 4>{-1,-1,-1,-1});
+		}
+		// ok im tired of doing pushTetrahedron variations
+
+		/**
+		 * Acts as the keyword `p`.
+		 * @param tet The polyline.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushPolyline(const Polyline& line)
+		{
+			if(line.length() < 2)
+			{
+				Logger::logError("pushPolyline(): Line MUST be atleast of length 2.");
+				return *this;
+			}
+			if(std::any_of(line.vIndices.cbegin(), line.vIndices.cend(), [this](const int32_t& ind){ return ind >= (int)vertices.size(); }))
+				Logger::logWarning("pushPolyline(): One of the vertex indices is pointing outside the vertices data!");
+			if(std::any_of(line.vnIndices.cbegin(), line.vnIndices.cend(), [this](const int32_t& ind){ return ind >= (int)normals.size(); }))
+				Logger::logWarning("pushPolyline(): One of the normal indices is pointing outside the normals data!");
+			if(std::any_of(line.vtIndices.cbegin(), line.vtIndices.cend(), [this](const int32_t& ind){ return ind >= (int)texCoords.size(); }))
+				Logger::logWarning("pushPolyline(): One of the texture coordinate indices is pointing outside the texture coords data!");
+			if(std::any_of(line.coIndices.cbegin(), line.coIndices.cend(), [this](const int32_t& ind){ return ind >= (int)colors.size(); }))
+				Logger::logWarning("pushPolyline(): One of the color indices is pointing outside the colors data!");
+			polylines.emplace_back(line);
+			return *this;
+		}
+		/**
+		 * Acts as the keyword `p`.
+		 * @param vIndices,vnIndices,vtIndices,coIndices The polyline data arrays.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushPolyline(
+			const std::vector<int32_t>& vIndices,
+			const std::vector<int32_t>& vnIndices,
+			const std::vector<int32_t>& vtIndices,
+			const std::vector<int32_t>& coIndices)
+		{
+			Polyline line{vIndices, vnIndices, vtIndices, coIndices};
+			if(vnIndices.size() < vIndices.size())
+			{
+				line.vnIndices.reserve(vIndices.size());
+				for(int i = 0; i < vIndices.size() - vnIndices.size(); i++)
+					line.vnIndices.push_back(-1);
+			}
+			if(vtIndices.size() < vIndices.size())
+			{
+				line.vtIndices.reserve(vIndices.size());
+				for(int i = 0; i < vIndices.size() - vtIndices.size(); i++)
+					line.vtIndices.push_back(-1);
+			}
+			if(coIndices.size() < vIndices.size())
+			{
+				line.coIndices.reserve(vIndices.size());
+				for(int i = 0; i < vIndices.size() - coIndices.size(); i++)
+					line.coIndices.push_back(-1);
+			}
+			return pushPolyline(line);
+		}
+
+		/**
+		 * Acts as the keyword `c`.
+		 * @param cell The cell.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushCell(const Cell& cell)
+		{
+			if(std::any_of(cell.tIndices.cbegin(), cell.tIndices.cend(), [this](const int32_t& ind){ return ind >= tetrahedra.size(); }))
+				Logger::logWarning("pushCell(): One of the tetrahedron indices is pointing outside the tetrahedra data!");
+
+			if(cell.tIndices.empty())
+			{
+				Logger::logError("pushCell(): The indices list must not be empty!");
+				return *this;
+			}
+
+			cells.push_back(cell);
+			return *this;
+		}
+		/**
+		 * @param tetra The tetrahedra list.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushCell(const std::vector<Tetrahedron>& tetra)
+		{
+			Cell cell{};
+			for(auto& tet : tetra)
+			{
+				pushTetrahedron(tet);
+				cell.tIndices.push_back(tetrahedra.size() - 1);
+			}
+			return pushCell(cell);
+		}
+		/**
+		 * @param tIndices The indices list.
+		 * @returns *this (for chaining)
+		 */
+		Object& pushCell(const std::vector<int32_t>& tIndices)
+		{
+			Cell cell{tIndices};
+			return pushCell(cell);
+		}
+
+		/**
+		 * Combines this Object with another Object.
+		 * @param other The Object to combine with.
+		 * @return *this (for chaining)
+		 */
+		Object& combineWith(const Object& other)
+		{
+			size_t startV = vertices.size();
+			size_t startVN = normals.size();
+			size_t startVT = texCoords.size();
+			size_t startCO = colors.size();
+
+			vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
+			normals.insert(normals.end(), other.normals.begin(), other.normals.end());
+			texCoords.insert(texCoords.end(), other.texCoords.begin(), other.texCoords.end());
+			colors.insert(colors.end(), other.colors.begin(), other.colors.end());
+
+			size_t startT = tetrahedra.size();
+
+			for(auto& tet : other.tetrahedra)
+			{
+				Tetrahedron newTet{tet};
+
+				for(auto& ind : newTet.vIndices)
+					ind += startV;
+				for(auto& ind : newTet.vnIndices)
+					ind += startVN;
+				for(auto& ind : newTet.vtIndices)
+					ind += startVT;
+				for(auto& ind : newTet.coIndices)
+					ind += startCO;
+
+				tetrahedra.emplace_back(newTet);
+			}
+			for(auto& pl : other.polylines)
+			{
+				Polyline newPl{pl};
+
+				for(auto& ind : newPl.vIndices)
+					ind += startV;
+				for(auto& ind : newPl.vnIndices)
+					ind += startVN;
+				for(auto& ind : newPl.vtIndices)
+					ind += startVT;
+				for(auto& ind : newPl.coIndices)
+					ind += startCO;
+
+				polylines.emplace_back(newPl);
+			}
+			for(auto& c : other.cells)
+			{
+				Cell newC{c};
+
+				for(auto& ind : newC.tIndices)
+					ind += startT;
+
+				cells.emplace_back(newC);
+			}
+
+			return *this;
+		}
+
+		std::string save4DO()
+		{
+			std::string result = "# Generated by 4DO-Lib\n\n# Header\n";
+			result += std::format("4DO {}\n", specVer);
+			result += std::format("orient {}\n", orientation.toString());
+			if(!tetrahedra.empty())
+			{
+				tformat = tetrahedra[0].guessFormat();
+				result += std::format("tformat {}\n", tformat.toString());
+			}
+			if(!polylines.empty())
+			{
+				pformat = polylines[0].guessFormat();
+				result += std::format("pformat {}\n", pformat.toString());
+			}
+
+			if(!colors.empty())
+			{
+				result += "\n# Colors\n\n";
+
+				for (auto& color : colors)
+					result += std::format("co {}\n", color.toString());
+			}
+
+			if(!vertices.empty())
+			{
+				result += "\n# Vertices\n\n";
+
+				for (auto& vert : vertices)
+					result += std::format("v {}\n", vert.toString());
+			}
+
+			if(!normals.empty())
+			{
+				result += "\n# Normals\n\n";
+
+				for (auto& n : normals)
+					result += std::format("vn {}\n", n.toString());
+			}
+
+			if(!texCoords.empty())
+			{
+				result += "\n# Texture Coordinates\n\n";
+
+				for (auto& tc : texCoords)
+					result += std::format("vt {}\n", tc.toString());
+			}
+
+			if(!tetrahedra.empty())
+			{
+				result += "\n# Tetrahedra\n\n";
+
+				for (auto& t : tetrahedra)
+					result += std::format("t {}\n", t.toString(tformat));
+			}
+
+			if(!cells.empty())
+			{
+				result += "\n# Cells\n\n";
+
+				for (auto& c : cells)
+					result += std::format("c {}\n", c.toString());
+			}
+
+			if(!polylines.empty())
+			{
+				result += "\n# Polylines\n\n";
+
+				for (auto& p : polylines)
+					result += std::format("p {}\n", p.toString(pformat));
+			}
+
+			return result;
+		}
+
+		/**
+		 * Saves the Object in 4DO file format to the given `path`.
+		 * @param path The output filepath.
+		 * @returns `false` if failed, otherwise `true`.
+		 */
+		bool save4DOToFile(const std::string& path)
+		{
+			std::ofstream file = std::ofstream(path);
+			if(!file.is_open())
+			{
+				Logger::logError(std::format("fdo::Object::save4DOToFile: Failed to open file at path \"{}\".", path));
+				return false;
+			}
+
+			std::string data = save4DO();
+
+			file << data;
+
+			return true;
 		}
 	};
 }
