@@ -68,7 +68,7 @@ namespace fdo::utils
 		toUpper(result);
 		return result;
 	}
-	inline constexpr isWhiteSpaceOrEmpty(const std::string& s)
+	inline constexpr bool isWhiteSpaceOrEmpty(const std::string& s)
 	{
 		return std::all_of(s.begin(),s.end(),[](uint8_t c){ return std::isspace(c); });
 	}
