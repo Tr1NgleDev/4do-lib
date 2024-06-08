@@ -689,7 +689,7 @@ namespace fdo
 		 * @param newOrientation The new orientation.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& orient(const Orientation& newOrientation)
+		Object& orient(const Orientation& newOrientation)
 		{
 			for(auto& v : vertices)
 				Orientation::transform(v, orientation, newOrientation);
@@ -704,7 +704,7 @@ namespace fdo
 		 * @param vertex The vertex position.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushVertex(const Point& vertex)
+		Object& pushVertex(const Point& vertex)
 		{
 			if(std::isnan(vertex.x) || std::isnan(vertex.y) || std::isnan(vertex.z) || std::isnan(vertex.w) ||
 				std::isinf(vertex.x) || std::isinf(vertex.y) || std::isinf(vertex.z) || std::isinf(vertex.w))
@@ -759,7 +759,7 @@ namespace fdo
 		 * @param texCoord The texture coordinates.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTexCoord(const TexCoord& texCoord)
+		Object& pushTexCoord(const TexCoord& texCoord)
 		{
 			if(std::isnan(texCoord.x) || std::isnan(texCoord.y) || std::isnan(texCoord.z) ||
 				std::isinf(texCoord.x) || std::isinf(texCoord.y) || std::isinf(texCoord.z))
@@ -788,7 +788,7 @@ namespace fdo
 		 * @param color The color.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushColor(const Color& color)
+		Object& pushColor(const Color& color)
 		{
 			colors.emplace_back(color);
 			return *this;
@@ -830,7 +830,7 @@ namespace fdo
 		 * @param tet The tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(const Tetrahedron& tet)
+		Object& pushTetrahedron(const Tetrahedron& tet)
 		{
 			if(std::any_of(tet.vIndices.cbegin(), tet.vIndices.cend(), [this](const int32_t& ind){ return ind >= (int)vertices.size(); }))
 				Logger::logWarning("pushTetrahedron(): One of the vertex indices is pointing outside the vertices data!");
@@ -848,7 +848,7 @@ namespace fdo
 		 * @param vIndices,vnIndices,vtIndices,coIndices The tetrahedron data arrays.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			const std::array<int32_t, 4>& vIndices,
 			const std::array<int32_t, 4>& vnIndices,
 			const std::array<int32_t, 4>& vtIndices,
@@ -861,7 +861,7 @@ namespace fdo
 		 * @param vIndices,vnIndices,vtIndices,coIndices The tetrahedron data arrays.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			int32_t (&vIndices )[4],
 			int32_t (&vnIndices)[4],
 			int32_t (&vtIndices)[4],
@@ -873,7 +873,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			int32_t v0,
 			int32_t v1,
 			int32_t v2,
@@ -885,7 +885,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			int32_t v0,
 			int32_t v1,
 			int32_t v2,
@@ -901,7 +901,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			int32_t v0,
 			int32_t v1,
 			int32_t v2,
@@ -914,7 +914,7 @@ namespace fdo
 		 * @param v0,v1,v2,v3 Vertex Positions of the tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			const Point& v0,
 			const Point& v1,
 			const Point& v2,
@@ -932,7 +932,7 @@ namespace fdo
 		 * @param co The color assigned to the whole tetrahedron.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushTetrahedron(
+		Object& pushTetrahedron(
 			const Point& v0,
 			const Point& v1,
 			const Point& v2,
@@ -980,7 +980,7 @@ namespace fdo
 		 * @param tet The polyline.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushPolyline(const Polyline& line)
+		Object& pushPolyline(const Polyline& line)
 		{
 			if(line.length() < 2)
 			{
@@ -1003,7 +1003,7 @@ namespace fdo
 		 * @param vIndices,vnIndices,vtIndices,coIndices The polyline data arrays.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushPolyline(
+		Object& pushPolyline(
 			const std::vector<int32_t>& vIndices,
 			const std::vector<int32_t>& vnIndices,
 			const std::vector<int32_t>& vtIndices,
@@ -1036,7 +1036,7 @@ namespace fdo
 		 * @param cell The cell.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushCell(const Cell& cell)
+		Object& pushCell(const Cell& cell)
 		{
 			if(std::any_of(cell.tIndices.cbegin(), cell.tIndices.cend(), [this](const int32_t& ind){ return ind >= tetrahedra.size(); }))
 				Logger::logWarning("pushCell(): One of the tetrahedron indices is pointing outside the tetrahedra data!");
@@ -1054,7 +1054,7 @@ namespace fdo
 		 * @param tetra The tetrahedra list.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushCell(const std::vector<Tetrahedron>& tetra)
+		Object& pushCell(const std::vector<Tetrahedron>& tetra)
 		{
 			Cell cell{};
 			for(auto& tet : tetra)
@@ -1068,7 +1068,7 @@ namespace fdo
 		 * @param tIndices The indices list.
 		 * @returns *this (for chaining)
 		 */
-		constexpr Object& pushCell(const std::vector<int32_t>& tIndices)
+		Object& pushCell(const std::vector<int32_t>& tIndices)
 		{
 			Cell cell{tIndices};
 			return pushCell(cell);
@@ -1079,7 +1079,7 @@ namespace fdo
 		 * @param other The Object to combine with.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& combineWith(const Object& other)
+		Object& combineWith(const Object& other)
 		{
 			size_t startV = vertices.size();
 			size_t startVN = normals.size();
@@ -1162,7 +1162,7 @@ namespace fdo
 		 * @param v The translation amount.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& translate(const Point& v)
+		Object& translate(const Point& v)
 		{
 			for(auto& vert : vertices)
 				vert += v;
@@ -1175,7 +1175,7 @@ namespace fdo
 		 * @param origin The scale origin.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& scale(const Point& v, const Point& origin)
+		Object& scale(const Point& v, const Point& origin)
 		{
 			for(auto& vert : vertices)
 				vert = origin + (vert - origin) * v;
@@ -1193,7 +1193,7 @@ namespace fdo
 		 * @param verticesT The transformation function.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& transformVertices(
+		Object& transformVertices(
 			const std::function<Point(const Point& vertex)>& verticesT)
 		{
 			for(auto& vert : vertices)
@@ -1206,7 +1206,7 @@ namespace fdo
 		 * @param normalsT The transformation function.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& transformNormals(
+		Object& transformNormals(
 			const std::function<Point(const Point& normal)>& normalsT)
 		{
 			for(auto& n : normals)
@@ -1219,7 +1219,7 @@ namespace fdo
 		 * @param texCoordsT The transformation function.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& transformTexCoords(
+		Object& transformTexCoords(
 			const std::function<TexCoord(const TexCoord& texCoord)>& texCoordsT)
 		{
 			for(auto& texCoord : texCoords)
@@ -1232,7 +1232,7 @@ namespace fdo
 		 * @param colorsT The transformation function.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& transformColors(
+		Object& transformColors(
 			const std::function<Color(const Color& color)>& colorsT)
 		{
 			for(auto& color : colors)
@@ -1245,7 +1245,7 @@ namespace fdo
 		 * @param verticesT,normalsT,texCoordsT,colorsT The transformation functions.
 		 * @return *this (for chaining)
 		 */
-		constexpr Object& transform(
+		Object& transform(
 			const std::function<Point(const Point& vertex)>& verticesT,
 			const std::function<Point(const Point& normal)>& normalsT,
 			const std::function<TexCoord(const TexCoord& texCoord)>& texCoordsT,
