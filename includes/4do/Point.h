@@ -167,7 +167,7 @@ namespace fdo
 				v.w * v.w;
 		}
 
-		inline static constexpr float length(const Point& v)
+		inline static float length(const Point& v)
 		{
 			float lSqr = lengthSqr(v);
 			return sqrtf(lSqr);
