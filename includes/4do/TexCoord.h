@@ -154,7 +154,7 @@ namespace fdo
 					v.w * v.w;
 		}
 
-		inline static constexpr float length(const TexCoord& v)
+		inline static float length(const TexCoord& v)
 		{
 			float lSqr = lengthSqr(v);
 			return sqrtf(lSqr);
