@@ -126,7 +126,7 @@ namespace fdo
 			return *this;
 		}
 
-		operator glm::u8vec4() const { return glm::u8vec4{ r, g, b }; }
+		operator glm::u8vec4() const { return glm::u8vec4{ r, g, b, a }; }
 		#endif
 	};
 	typedef Color u8vec4;
