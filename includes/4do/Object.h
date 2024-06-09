@@ -692,9 +692,9 @@ namespace fdo
 		Object& orient(const Orientation& newOrientation)
 		{
 			for(auto& v : vertices)
-				Orientation::transform(v, orientation, newOrientation);
+				v = Orientation::transform(v, orientation, newOrientation);
 			for (auto& n : normals)
-				Orientation::transform(n, orientation, newOrientation);
+				n = Orientation::transform(n, orientation, newOrientation);
 
 			orientation = newOrientation;
 
