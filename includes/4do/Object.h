@@ -693,6 +693,8 @@ namespace fdo
 		{
 			for(auto& v : vertices)
 				Orientation::transform(v, orientation, newOrientation);
+			for (auto& n : normals)
+				Orientation::transform(n, orientation, newOrientation);
 
 			orientation = newOrientation;
 
