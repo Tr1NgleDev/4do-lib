@@ -72,7 +72,7 @@ namespace fdo
 		constexpr size_t getInd(size_t i) const
 		{
 			Axis a = get(i);
-			return (a >= N_X ? a - N_X : a) - 1;
+			return (a >= N_X ? a - N_X : a - 1);
 		}
 		// Returns the sign (1 or -1)
 		constexpr float getSign(size_t i) const
