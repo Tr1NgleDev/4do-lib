@@ -27,7 +27,7 @@ namespace fdo
 		{
 			std::string formatted =
 				ansiColors
-				? std::format("\x1B[37;1m4DO-Lib: \x1B[31;5mError: \x1B[m{}", msg)
+				? std::format("\x1B[37;1m4DO-Lib: \x1B[31;5mError: \x1B[0m{}", msg)
 				: std::format("4DO-Lib: Error: {}", msg);
 
 			if(logToConsole) printf("%s\n", formatted.c_str());
@@ -45,7 +45,7 @@ namespace fdo
 		{
 			std::string formatted =
 				ansiColors
-				? std::format("\x1B[37;1m4DO-Lib: \x1B[33;1mWarning: \x1B[m{}", msg)
+				? std::format("\x1B[37;1m4DO-Lib: \x1B[33;1mWarning: \x1B[0m{}", msg)
 				: std::format("4DO-Lib: Warning: {}", msg);
 
 			if(logToConsole) printf("%s\n", formatted.c_str());
@@ -63,7 +63,7 @@ namespace fdo
 		{
 			std::string formatted =
 				ansiColors
-				? std::format("\x1B[37;1m4DO-Lib: \x1B[37;0mMessage: \x1B[m{}", msg)
+				? std::format("\x1B[37;1m4DO-Lib: \x1B[37;0mMessage: \x1B[0m{}", msg)
 				: std::format("4DO-Lib: Message: {}", msg);
 
 			if(logToConsole) printf("%s\n", formatted.c_str());

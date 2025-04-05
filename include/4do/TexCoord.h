@@ -2,10 +2,6 @@
 
 #include "basicIncludes.h"
 
-#ifdef GLM_SETUP_INCLUDED
-struct glm::vec3;
-#endif
-
 namespace fdo
 {
 	struct TexCoord
@@ -22,7 +18,7 @@ namespace fdo
 			this->v = other.v;
 			this->w = other.w;
 		}
-		TexCoord(TexCoord&& other)
+		TexCoord(TexCoord&& other) noexcept
 		{
 			this->u = other.u;
 			this->v = other.v;
@@ -41,7 +37,7 @@ namespace fdo
 
 			return *this;
 		}
-		constexpr TexCoord& operator=(TexCoord&& other)
+		constexpr TexCoord& operator=(TexCoord&& other) noexcept
 		{
 			this->u = other.u;
 			this->v = other.v;
@@ -182,7 +178,7 @@ namespace fdo
 			this->z = other.z;
 		}
 
-		TexCoord(glm::vec3&& other)
+		TexCoord(glm::vec3&& other) noexcept
 		{
 			this->x = other.x;
 			this->y = other.y;
@@ -202,7 +198,7 @@ namespace fdo
 			return *this;
 		}
 
-		constexpr TexCoord& operator=(glm::vec3&& other)
+		constexpr TexCoord& operator=(glm::vec3&& other) noexcept
 		{
 			this->x = other.x;
 			this->y = other.y;

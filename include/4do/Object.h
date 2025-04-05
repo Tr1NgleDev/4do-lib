@@ -8,6 +8,8 @@
 #include "Tetrahedron.h"
 #include "Polyline.h"
 #include "Cell.h"
+#include "Color.h"
+#include "Format.h"
 
 #include "Logger.h"
 
@@ -196,28 +198,23 @@ namespace fdo
 							}
 
 							std::set<Axis> axes{};
-							#define setAxis(i) \
-                                result.orientation[i] = StringToAxis(data[i]); \
-                                if(result.orientation[i] == UNKNOWN) \
-                                { \
-									result.orientation = Orientation{X,Y,Z,W}; \
-                                    Logger::logError(std::format("{}: \"{}\" is not a valid axis!", lineInd + 1, utils::toUpperCopy(data[i]))); \
-                                    goto nextLine; \
-                                } \
-                                if(axes.contains(result.orientation[i])) \
-                                { \
-                                    result.orientation = Orientation{X,Y,Z,W}; \
-                                    Logger::logError(std::format("{}: Each of the axes MUST be included exactly once!", lineInd + 1)); \
-                                    goto nextLine; \
-                                } \
+							for (int i = 0; i < 4; ++i)
+							{
+								result.orientation[i] = StringToAxis(data[i]);
+								if (result.orientation[i] == UNKNOWN)
+								{
+									result.orientation = Orientation{ X,Y,Z,W };
+									Logger::logError(std::format("{}: \"{}\" is not a valid axis!", lineInd + 1, utils::toUpperCopy(data[i])));
+									goto nextLine;
+								}
+								if (axes.contains(result.orientation[i]))
+								{
+									result.orientation = Orientation{ X,Y,Z,W };
+									Logger::logError(std::format("{}: Each of the axes MUST be included exactly once!", lineInd + 1));
+									goto nextLine;
+								}
 								axes.insert(result.orientation[i]);
-
-							setAxis(0);
-							setAxis(1);
-							setAxis(2);
-							setAxis(3);
-
-							#undef setAxis
+							}
 
 							goto nextLine;
 						}
@@ -317,7 +314,7 @@ namespace fdo
 									lineInd + 1));
 								goto nextLine;
 							}
-							Color color{255,255,255, 255};
+							Color color{ 255, 255, 255, 255 };
 							for(int i = 0; i < (int)data.size(); i++)
 							{
 								bool succeded = false;
@@ -1371,5 +1368,171 @@ namespace fdo
 		 * @returns `false` if failed, otherwise `true`.
 		 */
 		bool save4DOToFile(const std::string& path) { return save4DOToFile(path, {}); }
+
+		/**
+		 * Converts the Object data into GPU-compatible single index buffer format.
+		 * @param indexBuffer The output indices.
+		 * @param pos The output vertex positions. Can be left NULL if you don't need it.
+		 * @param norm The output vertex normals. Can be left NULL if you don't need it.
+		 * @param uvw The output vertex texture coordinates. Can be left NULL if you don't need it.
+		 * @param col The output vertex colors. Can be left NULL if you don't need it.
+		 * @param optimizeData When `true`, will try to optimize the output data.
+		 */
+		void tetrahedralize(
+			std::vector<uint32_t>& indexBuffer,
+			std::vector<fdo::Point>* pos = nullptr,
+			std::vector<fdo::Point>* norm = nullptr,
+			std::vector<fdo::TexCoord>* uvw = nullptr,
+			std::vector<fdo::Color>* col = nullptr,
+			bool optimizeData = true
+		)
+		{
+			if (!pos && !norm && !uvw && !col)
+				return;
+
+			if (pos)
+			{
+				pos->clear();
+				pos->reserve(tetrahedra.size() * 4);
+			}
+			if (norm)
+			{
+				norm->clear();
+				norm->reserve(tetrahedra.size() * 4);
+			}
+			if (uvw)
+			{
+				uvw->clear();
+				uvw->reserve(tetrahedra.size() * 4);
+			}
+			if (col)
+			{
+				col->clear();
+				col->reserve(tetrahedra.size() * 4);
+			}
+
+			indexBuffer.clear();
+			indexBuffer.reserve(tetrahedra.size() * 4);
+
+			for (int tetraIndex = 0; tetraIndex < tetrahedra.size(); ++tetraIndex)
+				for (int vertIndex = 0; vertIndex < 4; ++vertIndex)
+				{
+					if (pos)
+					{
+						auto v = tetrahedra[tetraIndex].vIndices[vertIndex];
+						if (v >= 0 && v < vertices.size())
+							pos->emplace_back(vertices[tetrahedra[tetraIndex].vIndices[vertIndex]]);
+					}
+					if (norm)
+					{
+						auto vn = tetrahedra[tetraIndex].vnIndices[vertIndex];
+						if (vn >= 0 && vn < normals.size())
+							norm->emplace_back(normals[tetrahedra[tetraIndex].vnIndices[vertIndex]]);
+					}
+					if (uvw)
+					{
+						auto vt = tetrahedra[tetraIndex].vtIndices[vertIndex];
+						if (vt >= 0 && vt < texCoords.size())
+							uvw->emplace_back(texCoords[tetrahedra[tetraIndex].vtIndices[vertIndex]]);
+					}
+					if (col)
+					{
+						auto co = tetrahedra[tetraIndex].coIndices[vertIndex];
+						if (co >= 0 && co < colors.size())
+							col->emplace_back(colors[tetrahedra[tetraIndex].coIndices[vertIndex]]);
+					}
+					indexBuffer.emplace_back(tetraIndex * 4 + vertIndex);
+				}
+
+			// optimize the data
+			if (optimizeData)
+			{
+				struct HashVertData
+				{
+					fdo::Point pos{ 0,0,0,0 };
+					fdo::Point norm{ 0,0,0,0 };
+					fdo::TexCoord uvw{ 0,0,0 };
+					fdo::Color col{ 0,0,0,0 };
+					constexpr bool operator==(const HashVertData& other) const
+					{
+						return pos == other.pos && norm == other.norm && uvw == other.uvw && col == other.col;
+					}
+				};
+				struct hash
+				{
+					size_t operator()(const HashVertData& va) const
+					{
+						auto hash_combine = [](size_t& h, auto val)
+							{
+								h ^= std::hash<std::decay_t<decltype(val)>>()(val) + 0x9e3779b9 + (h << 6) + (h >> 2);
+							};
+
+						size_t h = 0;
+						hash_combine(h, va.pos.x);
+						hash_combine(h, va.pos.y);
+						hash_combine(h, va.pos.z);
+						hash_combine(h, va.norm.x);
+						hash_combine(h, va.norm.y);
+						hash_combine(h, va.norm.z);
+						hash_combine(h, va.uvw.u);
+						hash_combine(h, va.uvw.v);
+						hash_combine(h, va.col.r);
+						hash_combine(h, va.col.g);
+						hash_combine(h, va.col.b);
+						hash_combine(h, va.col.a);
+						return h;
+					}
+				};
+
+				std::unordered_map<HashVertData, uint32_t, hash> vertexMap;
+				std::vector<uint32_t> newIndexBuffer;
+				std::vector<fdo::Point> newPos;
+				std::vector<fdo::Point> newNorm;
+				std::vector<fdo::TexCoord> newUVW;
+				std::vector<fdo::Color> newCol;
+				newIndexBuffer.reserve(indexBuffer.size());
+
+				for (uint32_t ind : indexBuffer)
+				{
+					HashVertData v
+					{
+						(pos ? pos->at(ind) : fdo::Point{0,0,0,0}),
+						(norm ? norm->at(ind) : fdo::Point{0,0,0,0}),
+						(uvw ? uvw->at(ind) : fdo::TexCoord{0,0,0}),
+						(col ? col->at(ind) : fdo::Color{0,0,0,0}),
+					};
+
+					auto it = vertexMap.find(v);
+					if (it != vertexMap.end())
+					{
+						newIndexBuffer.emplace_back(it->second);
+					}
+					else
+					{
+						uint32_t newInd = newPos.size();
+						if (pos)
+							newPos.emplace_back(v.pos);
+						if (norm)
+							newNorm.emplace_back(v.norm);
+						if (uvw)
+							newUVW.emplace_back(v.uvw);
+						if (col)
+							newCol.emplace_back(v.col);
+						vertexMap[v] = newInd;
+						newIndexBuffer.emplace_back(newInd);
+					}
+				}
+
+				indexBuffer = std::move(newIndexBuffer);
+				if (pos)
+					*pos = std::move(newPos);
+				if (norm)
+					*norm = std::move(newNorm);
+				if (uvw)
+					*uvw = std::move(newUVW);
+				if (col)
+					*col = std::move(newCol);
+			}
+		}
 	};
 }

@@ -42,7 +42,7 @@ namespace fdo
 		{
 			std::string result;
 			for(auto& l : levelData)
-				result = std::format("{} ", FDataTypeToString(l));
+				result += std::format("{} ", FDataTypeToString(l));
 
 			for(auto& f : indices)
 				result += std::format("{}/", FDataTypeToString(f));

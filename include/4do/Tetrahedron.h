@@ -41,7 +41,7 @@ namespace fdo
 		{
 			Format result{{}, {}};
 
-			if(!vIndices.empty() && vIndices[0] != -1)
+			if(vIndices[0] != -1)
 			{
 				bool levelData = std::all_of(vIndices.begin(), vIndices.end(), [&](const int& i) { return i == vIndices.front(); });
 				if(!levelData)
@@ -49,7 +49,7 @@ namespace fdo
 				else
 					result.levelData.push_back(FDataType::v);
 			}
-			if(!vnIndices.empty() && vnIndices[0] != -1)
+			if(vnIndices[0] != -1)
 			{
 				bool levelData = std::all_of(vnIndices.begin(), vnIndices.end(), [&](const int& i) { return i == vnIndices.front(); });
 				if(!levelData)
@@ -57,7 +57,7 @@ namespace fdo
 				else
 					result.levelData.push_back(FDataType::vn);
 			}
-			if(!vtIndices.empty() && vtIndices[0] != -1)
+			if(vtIndices[0] != -1)
 			{
 				bool levelData = std::all_of(vtIndices.begin(), vtIndices.end(), [&](const int& i) { return i == vtIndices.front(); });
 				if(!levelData)
@@ -65,7 +65,7 @@ namespace fdo
 				else
 					result.levelData.push_back(FDataType::vt);
 			}
-			if(!coIndices.empty() && coIndices[0] != -1)
+			if(coIndices[0] != -1)
 			{
 				bool levelData = std::all_of(coIndices.begin(), coIndices.end(), [&](const int& i) { return i == coIndices.front(); });
 				if(!levelData)

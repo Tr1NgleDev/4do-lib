@@ -2,10 +2,6 @@
 
 #include "basicIncludes.h"
 
-#ifdef GLM_SETUP_INCLUDED
-struct glm::vec4;
-#endif
-
 namespace fdo
 {
 	struct Point
@@ -21,7 +17,7 @@ namespace fdo
 			this->z = other.z;
 			this->w = other.w;
 		}
-		Point(Point&& other)
+		Point(Point&& other) noexcept
 		{
 			this->x = other.x;
 			this->y = other.y;
@@ -43,7 +39,7 @@ namespace fdo
 
 			return *this;
 		}
-		constexpr Point& operator=(Point&& other)
+		constexpr Point& operator=(Point&& other) noexcept
 		{
 			this->x = other.x;
 			this->y = other.y;
@@ -140,6 +136,8 @@ namespace fdo
 			return *this;
 		}
 
+		Point operator-() const { return Point{ -x, -y, -z, -w }; }
+
 		constexpr float& operator[](size_t i)
 		{
 			if(i < 0 || i >= 4)
@@ -196,7 +194,7 @@ namespace fdo
 			this->w = other.w;
 		}
 
-		Point(glm::vec4&& other)
+		Point(glm::vec4&& other) noexcept
 		{
 			this->x = other.x;
 			this->y = other.y;
@@ -219,7 +217,7 @@ namespace fdo
 			return *this;
 		}
 
-		constexpr Point& operator=(glm::vec4&& other)
+		constexpr Point& operator=(glm::vec4&& other) noexcept
 		{
 			this->x = other.x;
 			this->y = other.y;

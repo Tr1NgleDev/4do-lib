@@ -1,5 +1,5 @@
 add_executable(loading4DO main.cpp)
-target_include_directories(loading4DO PRIVATE "../../includes/")
+target_include_directories(loading4DO PRIVATE "../../include/")
 
 install(TARGETS loading4DO RUNTIME DESTINATION bin)
 
