@@ -176,6 +176,27 @@ namespace fdo
 			return l.x * r.x + l.y * r.y + l.z * r.z + l.w * r.w;
 		}
 
+		inline static Point cross(const Point& u, const Point& v, const Point& w)
+		{
+			//  intermediate values
+			float a = (v.x * w.y) - (v.y * w.x);
+			float b = (v.x * w.z) - (v.z * w.x);
+			float c = (v.x * w.w) - (v.w * w.x);
+			float d = (v.y * w.z) - (v.z * w.y);
+			float e = (v.y * w.w) - (v.w * w.y);
+			float f = (v.z * w.w) - (v.w * w.z);
+
+			// result vector
+			Point res;
+
+			res.x = (u.y * f) - (u.z * e) + (u.w * d);
+			res.y = -(u.x * f) + (u.z * c) - (u.w * b);
+			res.z = (u.x * e) - (u.y * c) + (u.w * a);
+			res.w = -(u.x * d) + (u.y * b) - (u.z * a);
+
+			return res;
+		}
+
 		inline static Point normalize(const Point& v)
 		{
 			float l = length(v);
