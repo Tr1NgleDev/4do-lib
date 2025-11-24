@@ -38,7 +38,7 @@ namespace fdo
 
 		Object(uint8_t specVer = 1) : specVer(specVer) {}
 
-		bool isInvalid() { return _invalid; }
+		bool isInvalid() const { return _invalid; }
 
 		size_t getVectorSize(FDataType type) const
 		{
